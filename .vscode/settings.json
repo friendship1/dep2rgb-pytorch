@@ -1,0 +1,8 @@
+{
+	"files.watcherExclude": {
+		"/data1/cv1/gf2rgb/dep2rgb/kitti/**": true,
+		"/data1/cv1/gf2rgb/dep2rgb/real_points_2d_pnts/**": true,
+		"/data1/cv1/gf2rgb/dep2rgb/real_points_orth/**": true,
+		"/data1/cv1/gf2rgb/dep2rgb/real_points/**": true
+	}
+}

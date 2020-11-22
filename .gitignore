@@ -1,0 +1,14 @@
+*.pyc
+outputs*/
+rgbs*/
+real_points_2d_pnts
+real_points_orth
+real_points
+kitti
+debug_gt/
+debug_input/
+outputs.bak(0507_successwithval)/
+outputs.bak(0507_successwithval)
+rgbs.bak(0507)/
+model/checkpoints/
+log/

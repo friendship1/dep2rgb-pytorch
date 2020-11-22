@@ -1,0 +1,50 @@
+{
+	"train_phase" : "train",
+	"conv1_kernel_size" : 5,
+	
+	"train_num_thread" : 2,
+	"dataset" : "KITTIDataset",
+	"test_valid" : true,
+	"val_phase" : "val",
+	"val_batch_size" : 1,
+	"val_num_thread" : 1,
+
+	"val_max_iter" : 100,
+	"val_epoch_freq" : 1,
+	"bn_momentum" : 0.05,
+	"stat_freq" : 10,
+
+	"__comment" : "LOGGING",
+
+	"__comment" : "TRAINER",
+	"trainer" : "coarse",
+
+	"__comment" : "NETWORK",
+	"model_3dnet" : "SimpleNetBN",
+	"coarsenet" : "UNet",
+	"refinenet" : "RefineNet",
+	"discrinet" : "DiscriNet",
+	"model_n_out" : 32,
+	"best_val_metric" : "loss",
+
+	"__comment" : "OPTIMIZER",
+	"optimizer" : "Adam",
+	"max_epoch" : 1000,
+	"lr" : 1e-4,
+	"momentum" : 0.9,
+	"weight_decay" : 1e-4,
+	"exp_gamma" : 0.99,
+	"iter_size" : 1,
+
+	"__comment" : "MISC",
+	"use_gpu" : true,
+	"weights" : null,
+	"normalize_feature" : false,
+	
+	"__comment" : "OWN STUFF",
+	"coord_root" : "./real_points",
+	"coord2d_root" : "./real_points_2d_pnts",
+	"img_root" : "./kitti",
+	"dep_root" : "./kitti"
+
+}
