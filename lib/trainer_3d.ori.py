@@ -58,10 +58,6 @@ class BaseTrainer:
 			32, #config.model_n_out, # modified for model_3d (32 dim)
 			3)
 
-		featnet = Coarsenet(
-			1, 
-			3)
-
 		Model_VGG = load_model("Vgg16")
 		model_vgg = Model_VGG()
 		state = torch.load("model/checkpoints/modified_vgg.pth")["model"]
@@ -84,7 +80,6 @@ class BaseTrainer:
 		self.config = config
 		self.model_3dnet = model_3dnet
 		self.coarsenet = coarsenet
-		self.featnet = featnet
 		self.model_vgg = model_vgg
 		self.max_epoch = config.max_epoch
 		self.val_max_iter = config.val_max_iter
@@ -115,13 +110,6 @@ class BaseTrainer:
 			# momentum=config.momentum,
 			# weight_decay=config.weight_decay)
 
-		self.optimizer_feat = getattr(optim, config.optimizer)(
-			featnet.parameters(),
-			lr=config.lr)
-			# eps=1e-8,
-			# momentum=config.momentum,
-			# weight_decay=config.weight_decay)
-
 		self.optimizer_3d = getattr(optim, config.optimizer)(
 			model_3dnet.parameters(),
 			lr=config.lr)
@@ -147,7 +135,6 @@ class BaseTrainer:
 		self.log_step = int(np.sqrt(self.config.batch_size))
 		self.model_3dnet = self.model_3dnet.to(self.device)
 		self.coarsenet = self.coarsenet.to(self.device)
-		self.featnet = self.featnet.to(self.device)
 		self.model_vgg = self.model_vgg.to(self.device)
 		self.writer = SummaryWriter(logdir=config.out_dir)
 
@@ -158,7 +145,6 @@ class BaseTrainer:
 				self.start_epoch = state['epoch'] + 1
 				model_3dnet.load_state_dict(state['state_dict'])
 				coarsenet.load_state_dict(state['state_dict2'])
-				featnet.load_state_dict(state['state_dict3'])
 				self.optimizer.load_state_dict(state['optimizer'])
 				self.optimizer_3d.load_state_dict(state['optimizer_3d'])
 
@@ -214,7 +200,6 @@ class BaseTrainer:
 			'epoch': epoch,
 			'state_dict': self.model_3dnet.state_dict(),
 			'state_dict2': self.coarsenet.state_dict(),
-			'state_dict3': self.featnet.state_dict(),
 			'optimizer': self.optimizer.state_dict(),
 			'optimizer_3d': self.optimizer_3d.state_dict(),
 
@@ -282,17 +267,6 @@ class SolidTrainer(BaseTrainer):
 	
 		return ret_dense_rsz
 
-	def project3d(self, F, coord2d):
-		# batch_size = coord2d.shape[0]
-		# resize with ratio
-		ratio_x = 832 / 1248
-		ratio_y = 256 / 384
-
-		ret = ME.SparseTensor(
-			F.F,
-			coords = coord2d
-		)
-
 	def perceptual_loss(self, syn, ori):
 		syn = syn
 		p1, p2, p3 = self.model_vgg(syn)
@@ -305,7 +279,6 @@ class SolidTrainer(BaseTrainer):
 		gc.collect()
 		self.model_3dnet.train()
 		self.coarsenet.train()
-		self.featnet.train()
 		self.model_vgg.eval()
 		# Epoch starts from 1
 
@@ -333,14 +306,6 @@ class SolidTrainer(BaseTrainer):
 
 			rgb_GT = input_dict['img'].to(self.device)
 			F2d = input_dict['dep'].to(self.device)
-
-			print(input_dict['coord2d'])
-			exit()
-			# extract feature
-			coarse_rgb = self.featnet(F2d)
-			coarse_rgb = (coarse_rgb + 1) * 127.5
-
-			
 
 			sparse_inp = ME.SparseTensor(input_dict['feat'], coords=input_dict['coord']).to(self.device)
 			# RGB = self.coarsenet(F2d)
@@ -394,7 +359,6 @@ class SolidTrainer(BaseTrainer):
 	def _valid_epoch(self, is_test=False):
 		self.model_3dnet.eval()
 		self.coarsenet.eval()
-		self.featnet.eval()
 		self.model_vgg.eval()
 		self.val_data_loader.dataset.reset_seed(0)
 		num_data = 0

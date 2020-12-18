@@ -106,11 +106,12 @@ class BaseTrainer:
 		# 	# eps=1e-8,
 		# 	# momentum=config.momentum,
 		# 	# weight_decay=config.weight_decay)
-		self.optimizer_discri = getattr(optim, config.optimizer)(
-			self.discrinet.parameters(),
-			lr=config.lr)
+
 		self.optimizer_refine = getattr(optim, config.optimizer)(
 			self.refinenet.parameters(),
+			lr=config.lr)
+		self.optimizer_discri = getattr(optim, config.optimizer)(
+			self.discrinet.parameters(),
 			lr=config.lr)
 
 		self.start_epoch = 1
@@ -320,7 +321,8 @@ class RefineTrainer(BaseTrainer):
 			### Adversarial Training
 			if dloss_prev > 0.1:
 				train_discri_candi_cnt+=1
-			if curr_iter % 2 == 0 and dloss_prev > 0.1:
+			# if curr_iter % 2 == 0 and dloss_prev > 0.1:
+			if dloss_prev > 0.1:
 				self.refinenet.eval()
 				self.discrinet.train()
 				train_discri = 1
@@ -334,25 +336,29 @@ class RefineTrainer(BaseTrainer):
 			g1, g2, g3 = self.model_vgg(rgb_gt)
 			real_inp = [torch.cat((refine_inp, rgb_gt, g1), dim=1).to(self.device1).detach(), g2.to(self.device1).detach(), g3.to(self.device1).detach()]
 			### Discriminator loss
+
+			###################################################################### BUGs HERE MAYBE
 			# real backward
 			gout = self.discrinet(real_inp)
 			discri_loss_real = self.CEloss(gout, label_real)
-			if train_discri:
-				discri_loss_real.backward()
+			# if train_discri:
+			# 	discri_loss_real.backward()
 			# fake backward
 			f1, f2, f3 = self.model_vgg(rgb_refine)
 			fake_inp = [torch.cat((refine_inp, rgb_refine, f1), dim=1).to(self.device1), f2.to(self.device1), f3.to(self.device1)]
 			fout = self.discrinet(fake_inp)
 			discri_loss_fake = self.CEloss(fout, label_fake)
-			if train_discri:
-				discri_loss_fake.backward()
+			# if train_discri:
+			# 	discri_loss_fake.backward()
 			discri_loss = discri_loss_real + discri_loss_fake
+			if train_discri:
+				discri_loss.backward()
 
 			# RefineNet loss (Generator)
 			recon_loss = torch.mean(torch.abs(rgb_refine - rgb_gt))
 			percep_loss = ( torch.mean((f1-g1)**2) + torch.mean((f2-g2)**2) + torch.mean((f3-g3)**2) ) / 3.0
 			ce_loss = self.CEloss(fout.to(self.device0), label_real0)
-			refine_loss = percep_loss + recon_loss + 1e3 * ce_loss
+			refine_loss = percep_loss + recon_loss + 1e4 * ce_loss
 			
 			### Adversarial Training 
 			if train_discri:
@@ -362,7 +368,7 @@ class RefineTrainer(BaseTrainer):
 				refine_loss.backward()
 				self.optimizer_refine.step()
 			dloss_prev = discri_loss.item()
-
+			#####################################################################
 			bchavg_discri_loss = dloss_prev / batch_size
 			bchavg_refine_loss = refine_loss.item() / batch_size
 			bchavg_recon_loss = recon_loss.item() / batch_size
@@ -409,8 +415,14 @@ class RefineTrainer(BaseTrainer):
 						data_meter.avg, total_timer.avg - data_meter.avg))
 				data_meter.reset()
 				total_timer.reset()
+				discri_loss_avg = 0
+				refine_loss_avg = 0
 				train_discri_cnt = 0
 				train_discri_candi_cnt = 0
+				recon_loss_avg = 0
+				percep_loss_avg = 0
+				ce_loss_avg = 0
+
 
 	def _valid_epoch(self, is_test=False):
 		self.coarsenet.eval()
