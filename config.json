@@ -12,7 +12,7 @@
 	"val_max_iter" : 100,
 	"val_epoch_freq" : 1,
 	"bn_momentum" : 0.05,
-	"stat_freq" : 10,
+	"stat_freq" : 1,
 
 	"__comment" : "LOGGING",
 
